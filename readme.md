@@ -9,7 +9,7 @@ A simple selfbot manager written in typeScript
 
     Multiple Connectivity (Tokens): Connect multiple Discord selfbots.
     Easy configuration: customizable configurations for each user, with a json database.
-    Easy modifications: easily editable template
+    Easily editable template..
 
 ## Prerequisites
 
@@ -25,7 +25,11 @@ A simple selfbot manager written in typeScript
 ## Install dependencies.
 
     cd manager-selfbot-multitokens
-    npm install
+    npm i -g ts-node typescript 
+    npm i discord.js discord.js-selfbot-v13
+## Start the project
+
+     ts-node src/index
 ## Configure the settings.
 
     export const token: string = 'Your bot token here', service: string = 'dvwp', prefix: string = '!', url: string = 'https://discord.gg/';
