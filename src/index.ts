@@ -18,8 +18,8 @@ import {
 } from "fs";
 import ("colors");
 
-export const token: string = 'MTE5OTAxODU4MDM2MTEwMTM2Mw.Gi457d.V8Y1nQ6hGc0RTqPMZyoPnMVXa9XJ4znKMqXw2A', service: string = 'dvwp', prefix: string = '!', url: string = 'https://discord.gg/';
-export const ownersID: string[] = ['1196134436983546020',  '4146056203397627904'], guildID: string = '1196164892256895127', afkID: string = '1196164892256895131';
+export const token: string = 'Your bot token here', service: string = 'dvwp', prefix: string = '!', url: string = 'https://discord.gg/';
+export const ownersID: string[] = ['Owners'], guildID: string = 'guild id', afkID: string = 'Your afk channel id (voc)';
 
 const bot = new Discord({
     intents: 3276795
