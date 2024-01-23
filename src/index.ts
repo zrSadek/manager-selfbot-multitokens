@@ -39,47 +39,48 @@ const users: string[] = JSON.parse(readFileSync('./users.json', 'utf-8'));
 bot.on("ready", async () => {
     console.log(`${bot.user?.username} is connected !`.magenta);
 
-    for (const user of users) {
-        let client: Client = new Client(options);
-        client.login(user)
-            .catch(() => {
-                users.pop(user);
-                writeFileSync('./users.json', JSON.stringify(users));
-                console.log(`[Users]: Failed to connect ${user} `.red);
-                return;
-            })
-            .then(() => promises.push(client));
-
-        client.on("ready", async () => {
-            if(!existsSync(`./src/databases/${client.user?.id}.json`)) writeFileSync(`./src/databases/${client.user?.id}.json`, JSON.stringify(databasetemplate));
-            console.log(`[Users]: ${client.user?.globalName} ready on ${service}!`.magenta);
-            const support = client.guilds.cache.get(guildID);
-            if(support) joinVoiceChannel({
-                    channelId: afkID,
-                    guildId: guildID,
-                    selfDeaf: false,
-                    selfMute: false,
-                    adapterCreator: support?.voiceAdapterCreator as DiscordGatewayAdapterCreator
-                });
-        });
-
-        client.on("messageCreate", async (message: Message) => {
-            const data = JSON.parse(readFileSync(`./src/databases/${client.user?.id}.json`, 'utf8'));
-            if(message.author.id != client.user?.id || !message.content.startsWith(data.prefix)) return;
-            /* 
-
-            */
-        })
-
-    };
+    const connect = (tokens: string[]) => {
+        for (const user of tokens) {
+            let client: Client = new Client(options);
+            client.login(user)
+                .catch(() => {
+                    users.pop(user);
+                    writeFileSync('./users.json', JSON.stringify(users));
+                    console.log(`[Users]: Failed to connect ${user} `.red);
+                    return;
+                })
+                .then(() => promises.push(client));
     
+            client.on("ready", async () => {
+                if(!existsSync(`./src/databases/${client.user?.id}.json`)) writeFileSync(`./src/databases/${client.user?.id}.json`, JSON.stringify(databasetemplate));
+                console.log(`[Users]: ${client.user?.globalName} ready on ${service}!`.magenta);
+                const support = client.guilds.cache.get(guildID);
+                if(support) joinVoiceChannel({
+                        channelId: afkID,
+                        guildId: guildID,
+                        selfDeaf: false,
+                        selfMute: false,
+                        adapterCreator: support?.voiceAdapterCreator as DiscordGatewayAdapterCreator
+                    });
+            });
+
+            client.on("messageCreate", async (message: Message) => {
+                const data = JSON.parse(readFileSync(`./src/databases/${client.user?.id}.json`, 'utf8'));
+                if(message.author.id != client.user?.id || !message.content.startsWith(data.prefix)) return;
+                /* 
+
+                */
+            })
+
+        };
+    }
+
+    connect(users);
     setInterval(() => {
         bot.user?.setActivity(`${service} - ${promises.filter((user) => user.isReady).length} users`);
         const tokens = promises.map(user => user.token);
         const newusers = users.filter(user => !tokens.includes(user.token));
-        for (const user of newusers) {
-            
-        }
+        if(users.length > 2) connect(newusers);
     }, 20000);
     
     fetch(`https://discord.com/api/v10/applications/${bot.user?.id}/commands`, {
