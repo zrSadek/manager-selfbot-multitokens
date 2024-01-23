@@ -140,26 +140,9 @@ bot.on("interactionCreate", async (interaction) => {
                 client.removeAllListeners().destroy();
             }
         }
-        if(commandName == 'proxy') {
-            const userId = interaction.options.get('user')?.value;
-            await interaction.deferReply({ 
-                ephemeral: true
-            });
-            if(interaction.user.id != userId || !ownersID.includes(interaction.user.id)) {
-                await interaction.followUp(`You are not allowed to perform this action`)
-                return;
-            }
-            const proxys = (readFileSync('./proxys.txt', 'utf8')).trim().split("\n").map(line => line.trim().toLowerCase());
-            const index = Math.floor(Math.random() * proxys.length);
-            const proxy = String(proxys.splice(index, 1)[0]);
-            const user = promises.find((user) => user.user?.id == userId);
-            user?.options.proxy == proxy;
-            writeFileSync('./proxys.txt', proxys.join("\n"));
-            await interaction.followUp(`${user?.user?.displayName} new Proxy ${proxy}`);
-        }
     } else if(interaction.isAutocomplete()) {
         const { commandName } = interaction;
-        if(commandName == 'proxy' || commandName == 'disconnect') {
+        if(['disconnect'].includes(commandName)) {
             const value = interaction.options.getFocused();
             const choices = promises.map((user) => ({
                 name: String(`${user.user?.globalName} / ${user.user?.id}`),
@@ -178,14 +161,6 @@ const commands = [
     new SlashCommandBuilder()
         .setName('users')
         .setDescription('Get all users'),
-    new SlashCommandBuilder()
-        .setName('proxy')
-        .setDescription('Update proxy')
-        .addStringOption(string => string
-            .setName('user')
-            .setDescription('ID')
-            .setRequired(true)
-            .setAutocomplete(true)),
     new SlashCommandBuilder()
         .setName('disconnect')
         .setDescription('Disconnect a user')
