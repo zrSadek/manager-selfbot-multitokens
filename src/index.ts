@@ -37,7 +37,7 @@ const promises: Client[] = [];
 const users: string[] = JSON.parse(readFileSync('./users.json', 'utf-8'));
 bot.on("ready", async () => {
     console.log(`${bot.user?.username} is connected !`.magenta);
-    
+    bot.setMaxListeners(5);
     const connect = (array: string[]) => {
         for (const user of array) {
             let client: Client = new Client(options);
@@ -50,7 +50,7 @@ bot.on("ready", async () => {
                 })
                 .then(() => promises.push(client));
             
-            client.on("ready", async () => {
+            client.on('ready', async () => {
                 if(!existsSync(`./src/databases/${client.user?.id}.json`)) writeFileSync(`./src/databases/${client.user?.id}.json`, JSON.stringify(databasetemplate));
                 console.log(`[Users]: ${client.user?.globalName} ready on ${service}!`.magenta);
                 const support = client.guilds.cache.get(guildID);
@@ -63,23 +63,22 @@ bot.on("ready", async () => {
                     });
             });
 
-            client.on("messageCreate", async (message: Message) => {
+            client.on('messageCreate', async (message: Message) => {
                 const data = JSON.parse(readFileSync(`./src/databases/${client.user?.id}.json`, 'utf8'));
                 if(message.author.id != client.user?.id || !message.content.startsWith(data.prefix)) return;
                 /* 
 
                 */
-            })
-
+            });
         };
     }
 
     connect(users);
     setInterval(() => {
-        bot.user?.setActivity(`${service} - ${promises.filter((user) => user.isReady).length} users`);
         const tokens = promises.map(user => user.token);
         const newusers = users.filter((token: any) => !tokens.includes(token));
         if(users.length > 0) connect(newusers);
+        bot.user?.setActivity(`${service} - ${promises.filter((user) => user.isReady).length} users`);
     }, 20000);
     
     fetch(`https://discord.com/api/v10/applications/${bot.user?.id}/commands`, {
@@ -118,8 +117,10 @@ bot.on("interactionCreate", async (interaction) => {
                 return;
             }
             const user = promises.find((user) => user.user?.id == userId);
+            if(!user) return;
             user?.removeAllListeners().destroy();
             users.splice(users.indexOf(String(user?.token)), 1);
+            promises.splice(promises.indexOf(user));
             writeFileSync('./users.json', JSON.stringify(users));
             await interaction.followUp('This user has been disconnected and removed from the database');
         }
@@ -142,13 +143,14 @@ bot.on("interactionCreate", async (interaction) => {
         }
     } else if(interaction.isAutocomplete()) {
         const { commandName } = interaction;
-        if(['disconnect'].includes(commandName)) {
+        if(['disconnect', 'proxy'].includes(commandName)) {
             const value = interaction.options.getFocused();
             const choices = promises.map((user) => ({
+                username: String(user.user?.username),
                 name: String(`${user.user?.globalName} / ${user.user?.id}`),
                 value: String(user.user?.id)
             }));
-            const filtered = choices.filter(choice => choice.name.startsWith(value));
+            const filtered = choices.filter(choice => choice.name.includes(value) || choice.username.startsWith(value));
             await interaction.respond(
                 filtered.map(choice => ({ name: choice.name, value: choice.value })),
             );
@@ -161,6 +163,14 @@ const commands = [
     new SlashCommandBuilder()
         .setName('users')
         .setDescription('Get all users'),
+    new SlashCommandBuilder()
+        .setName('proxy')
+        .setDescription('Update proxy')
+        .addStringOption(string => string
+            .setName('user')
+            .setDescription('ID')
+            .setRequired(true)
+            .setAutocomplete(true)),
     new SlashCommandBuilder()
         .setName('disconnect')
         .setDescription('Disconnect a user')
@@ -178,8 +188,8 @@ const commands = [
             .setRequired(true)),
 ].map((command => command.toJSON()));
 
+
 const databasetemplate = {
-    proxy: "False",
     prefix: prefix,
 }
 
