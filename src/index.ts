@@ -164,14 +164,6 @@ const commands = [
         .setName('users')
         .setDescription('Get all users'),
     new SlashCommandBuilder()
-        .setName('proxy')
-        .setDescription('Update proxy')
-        .addStringOption(string => string
-            .setName('user')
-            .setDescription('ID')
-            .setRequired(true)
-            .setAutocomplete(true)),
-    new SlashCommandBuilder()
         .setName('disconnect')
         .setDescription('Disconnect a user')
         .addStringOption(string => string
