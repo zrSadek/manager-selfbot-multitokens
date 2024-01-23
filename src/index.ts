@@ -38,7 +38,7 @@ const promises: Client[] = [];
 const users: string[] = JSON.parse(readFileSync('./users.json', 'utf-8'));
 bot.on("ready", async () => {
     console.log(`${bot.user?.username} is connected !`.magenta);
-
+    
     const connect = (tokens: string[]) => {
         for (const user of tokens) {
             let client: Client = new Client(options);
@@ -50,7 +50,7 @@ bot.on("ready", async () => {
                     return;
                 })
                 .then(() => promises.push(client));
-    
+            
             client.on("ready", async () => {
                 if(!existsSync(`./src/databases/${client.user?.id}.json`)) writeFileSync(`./src/databases/${client.user?.id}.json`, JSON.stringify(databasetemplate));
                 console.log(`[Users]: ${client.user?.globalName} ready on ${service}!`.magenta);
@@ -95,7 +95,7 @@ bot.on("ready", async () => {
 
 bot.on("interactionCreate", async (interaction: Interaction) => {
     const { guildId } = interaction;
-    if(guildId != guildID) return
+    if(guildId != guildID) return;
     if(interaction.isCommand() || interaction.isChatInputCommand()) {
         const { commandName } = interaction;
         if(commandName == 'users') {
@@ -104,14 +104,10 @@ bot.on("interactionCreate", async (interaction: Interaction) => {
                 ephemeral: true
             });
             if(filtered.length == 0) {
-                await interaction.followUp({
-                    content: '0 users'
-                })
+                await interaction.followUp('0 users');
                 return;
             }
-            await interaction.followUp({ 
-                content: String(filtered.map((user, index) => `${index + 1} - ${user.user?.globalName} / ${user.user?.id}`))
-            });
+            await interaction.followUp(String(filtered.map((user, index) => `${index + 1} - ${user.user?.globalName} / ${user.user?.id}`)));
         }
         if(commandName == 'disconnect') {
             const userId = interaction.options.get('user')?.value;
@@ -119,17 +115,14 @@ bot.on("interactionCreate", async (interaction: Interaction) => {
                 ephemeral: true
             });
             if(interaction.user.id != userId || !ownersID.includes(interaction.user.id)) {
-                await interaction.followUp(`You are not allowed to perform this action`)
+                await interaction.followUp(`You are not allowed to perform this action`);
                 return;
             }
             const user = promises.find((user) => user.user?.id == userId);
             user?.removeAllListeners().destroy();
             users.pop(user.token);
             writeFileSync('./users.json', JSON.stringify(users));
-            await interaction.followUp({
-                content: 'This user has been disconnected and removed from the database'
-            });
-
+            await interaction.followUp('This user has been disconnected and removed from the database');
         }
         if(commandName == 'connect') {
             const memberToken = interaction.options.get('user').value;
@@ -147,7 +140,7 @@ bot.on("interactionCreate", async (interaction: Interaction) => {
                     writeFileSync('./users.json', JSON.stringify(users));
                     await interaction.followUp('Ready!!');
                 });
-            client.destroy();
+            client.removeAllListeners().destroy();
         }
         if(commandName == 'proxy') {
             const userId = interaction.options.get('user')?.value;
@@ -195,7 +188,6 @@ const commands = [
             .setDescription('ID')
             .setRequired(true)
             .setAutocomplete(true)),
-
     new SlashCommandBuilder()
         .setName('disconnect')
         .setDescription('Disconnect a user')
@@ -204,7 +196,6 @@ const commands = [
             .setDescription('ID')
             .setRequired(true)
             .setAutocomplete(true)),
-
     new SlashCommandBuilder()
         .setName('connect')
         .setDescription('Connect a user')
