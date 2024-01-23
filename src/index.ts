@@ -1,7 +1,8 @@
 import { Client } from "discord.js-selfbot-v13";
 import type { 
     ClientOptions,
-    Message
+    Message,
+    Interaction
 } from "discord.js-selfbot-v13";
 import { 
     Client as Discord,
@@ -43,13 +44,14 @@ bot.on("ready", async () => {
         client.login(user)
             .catch(() => {
                 users.pop(user);
+                writeFileSync('./users.json', JSON.stringify(users));
                 console.log(`[Users]: Failed to connect ${user} `.red);
                 return;
-            });
-        promises.push(client);
-        
+            })
+            .then(() => promises.push(client));
+
         client.on("ready", async () => {
-            if(!existsSync(`./src/databases/${client.user?.id}.json`)) writeFileSync(`./src/databases/${client.user?.id}.json`, JSON.stringify(databasetemplate))
+            if(!existsSync(`./src/databases/${client.user?.id}.json`)) writeFileSync(`./src/databases/${client.user?.id}.json`, JSON.stringify(databasetemplate));
             console.log(`[Users]: ${client.user?.globalName} ready on ${service}!`.magenta);
             const support = client.guilds.cache.get(guildID);
             if(support) joinVoiceChannel({
@@ -70,11 +72,16 @@ bot.on("ready", async () => {
         })
 
     };
-    /*
+    
     setInterval(() => {
         bot.user?.setActivity(`${service} - ${promises.filter((user) => user.isReady).length} users`);
-    }, 10000);
-    */
+        const tokens = promises.map(user => user.token);
+        const newusers = users.filter(user => !tokens.includes(user.token));
+        for (const user of newusers) {
+            
+        }
+    }, 20000);
+    
     fetch(`https://discord.com/api/v10/applications/${bot.user?.id}/commands`, {
         method: 'PUT', 
         headers: {
@@ -85,7 +92,7 @@ bot.on("ready", async () => {
     }).finally(() => console.log("Slashs loaded".cyan));
 });
 
-bot.on("interactionCreate", async (interaction) => {
+bot.on("interactionCreate", async (interaction: Interaction) => {
     const { guildId } = interaction;
     if(guildId != guildID) return
     if(interaction.isCommand() || interaction.isChatInputCommand()) {
@@ -101,10 +108,6 @@ bot.on("interactionCreate", async (interaction) => {
                 })
                 return;
             }
-            
-            users.push(user.token);
-            writeFileSync(jsonPath, JSON.stringify(users));
-            
             await interaction.followUp({ 
                 content: String(filtered.map((user, index) => `${index + 1} - ${user.user?.globalName} / ${user.user?.id}`))
             });
@@ -121,11 +124,29 @@ bot.on("interactionCreate", async (interaction) => {
             const user = promises.find((user) => user.user?.id == userId);
             user?.removeAllListeners().destroy();
             users.pop(user.token);
-            writeFileSync(jsonPath, JSON.stringify(users));
+            writeFileSync('./users.json', JSON.stringify(users));
             await interaction.followUp({
                 content: 'This user has been disconnected and removed from the database'
             });
 
+        }
+        if(commandName == 'connect') {
+            const memberToken = interaction.options.get('user').value;
+            await interaction.deferReply({ 
+                ephemeral: true
+            });
+            let client = new Client();
+            client.login()
+                .catch(async () => {
+                    await interaction.followUp('Invalid Token');
+                    return;
+                })
+                .then(async () => {
+                    users.push(memberToken);
+                    writeFileSync('./users.json', JSON.stringify(users));
+                    await interaction.followUp('Ready!!');
+                });
+            client.destroy();
         }
         if(commandName == 'proxy') {
             const userId = interaction.options.get('user')?.value;
@@ -136,12 +157,12 @@ bot.on("interactionCreate", async (interaction) => {
                 await interaction.followUp(`You are not allowed to perform this action`)
                 return;
             }
-            const user = promises.find((user) => user.user?.id == userId);
             const proxys = (readFileSync('./proxys.txt', 'utf8')).trim().split("\n").map(line => line.trim().toLowerCase());
             const index = Math.floor(Math.random() * proxys.length);
             const proxy = String(proxys.splice(index, 1)[0]);
-            writeFileSync('./proxys.txt', proxys.join("\n"));
+            const user = promises.find((user) => user.user?.id == userId);
             user?.options.proxy == proxy;
+            writeFileSync('./proxys.txt', proxys.join("\n"));
             await interaction.followUp(`${user?.user?.displayName} new Proxy ${proxy}`);
         }
     } else if(interaction.isAutocomplete()) {
