@@ -34,8 +34,8 @@ const options = {
 } as ClientOptions;
 
 const promises: Client[] = [];
+const users: string[] = JSON.parse(readFileSync('./users.json', 'utf-8'));
 bot.on("ready", async () => {
-    const users = JSON.parse(readFileSync('./users.json', 'utf-8'));
     console.log(`${bot.user?.username} is connected !`.magenta);
 
     for (const user of users) {
@@ -88,7 +88,6 @@ bot.on("ready", async () => {
 bot.on("interactionCreate", async (interaction) => {
     const { guildId } = interaction;
     if(guildId != guildID) return
-    const users = JSON.parse(readFileSync('./users.json', 'utf-8'));
     if(interaction.isCommand() || interaction.isChatInputCommand()) {
         const { commandName } = interaction;
         if(commandName == 'users') {
@@ -102,6 +101,10 @@ bot.on("interactionCreate", async (interaction) => {
                 })
                 return;
             }
+            
+            users.push(user.token);
+            writeFileSync(jsonPath, JSON.stringify(users));
+            
             await interaction.followUp({ 
                 content: String(filtered.map((user, index) => `${index + 1} - ${user.user?.globalName} / ${user.user?.id}`))
             });
@@ -117,9 +120,12 @@ bot.on("interactionCreate", async (interaction) => {
             }
             const user = promises.find((user) => user.user?.id == userId);
             user?.removeAllListeners().destroy();
+            users.pop(user.token);
+            writeFileSync(jsonPath, JSON.stringify(users));
             await interaction.followUp({
                 content: 'This user has been disconnected and removed from the database'
             });
+
         }
         if(commandName == 'proxy') {
             const userId = interaction.options.get('user')?.value;
