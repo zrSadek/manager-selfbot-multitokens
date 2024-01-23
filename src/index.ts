@@ -2,7 +2,6 @@ import { Client } from "discord.js-selfbot-v13";
 import type { 
     ClientOptions,
     Message,
-    Interaction
 } from "discord.js-selfbot-v13";
 import { 
     Client as Discord,
@@ -19,8 +18,8 @@ import {
 } from "fs";
 import ("colors");
 
-export const token: string = 'Your bot token here', service: string = 'dvwp', prefix: string = '!', url: string = 'https://discord.gg/';
-export const ownersID: string[] = ['Owners'], guildID: string = 'guild id', afkID: string = 'Your afk channel id (voc)';
+export const token: string = 'MTE5OTAxODU4MDM2MTEwMTM2Mw.Gi457d.V8Y1nQ6hGc0RTqPMZyoPnMVXa9XJ4znKMqXw2A', service: string = 'dvwp', prefix: string = '!', url: string = 'https://discord.gg/';
+export const ownersID: string[] = ['1196134436983546020',  '4146056203397627904'], guildID: string = '1196164892256895127', afkID: string = '1196164892256895131';
 
 const bot = new Discord({
     intents: 3276795
@@ -39,12 +38,12 @@ const users: string[] = JSON.parse(readFileSync('./users.json', 'utf-8'));
 bot.on("ready", async () => {
     console.log(`${bot.user?.username} is connected !`.magenta);
     
-    const connect = (tokens: string[]) => {
-        for (const user of tokens) {
+    const connect = (array: string[]) => {
+        for (const user of array) {
             let client: Client = new Client(options);
             client.login(user)
                 .catch(() => {
-                    users.pop(user);
+                    users.splice(users.indexOf(String(user)), 1);
                     writeFileSync('./users.json', JSON.stringify(users));
                     console.log(`[Users]: Failed to connect ${user} `.red);
                     return;
@@ -79,8 +78,8 @@ bot.on("ready", async () => {
     setInterval(() => {
         bot.user?.setActivity(`${service} - ${promises.filter((user) => user.isReady).length} users`);
         const tokens = promises.map(user => user.token);
-        const newusers = users.filter(user => !tokens.includes(user.token));
-        if(users.length > 2) connect(newusers);
+        const newusers = users.filter((token: any) => !tokens.includes(token));
+        if(users.length > 0) connect(newusers);
     }, 20000);
     
     fetch(`https://discord.com/api/v10/applications/${bot.user?.id}/commands`, {
@@ -93,7 +92,7 @@ bot.on("ready", async () => {
     }).finally(() => console.log("Slashs loaded".cyan));
 });
 
-bot.on("interactionCreate", async (interaction: Interaction) => {
+bot.on("interactionCreate", async (interaction) => {
     const { guildId } = interaction;
     if(guildId != guildID) return;
     if(interaction.isCommand() || interaction.isChatInputCommand()) {
@@ -120,27 +119,26 @@ bot.on("interactionCreate", async (interaction: Interaction) => {
             }
             const user = promises.find((user) => user.user?.id == userId);
             user?.removeAllListeners().destroy();
-            users.pop(user.token);
+            users.splice(users.indexOf(String(user?.token)), 1);
             writeFileSync('./users.json', JSON.stringify(users));
             await interaction.followUp('This user has been disconnected and removed from the database');
         }
         if(commandName == 'connect') {
-            const memberToken = interaction.options.get('user').value;
+            const memberToken = interaction.options.get('user')?.value;
             await interaction.deferReply({ 
                 ephemeral: true
             });
             let client = new Client();
-            client.login()
-                .catch(async () => {
-                    await interaction.followUp('Invalid Token');
-                    return;
-                })
-                .then(async () => {
-                    users.push(memberToken);
-                    writeFileSync('./users.json', JSON.stringify(users));
-                    await interaction.followUp('Ready!!');
-                });
-            client.removeAllListeners().destroy();
+            try {
+                await client.login(String(memberToken));
+                users.push(String(memberToken));
+                writeFileSync('./users.json', JSON.stringify(users));
+                await interaction.followUp('Ready!!');
+            } catch (error) {
+                await interaction.followUp('Invalid Token');
+            } finally {
+                client.removeAllListeners().destroy();
+            }
         }
         if(commandName == 'proxy') {
             const userId = interaction.options.get('user')?.value;
