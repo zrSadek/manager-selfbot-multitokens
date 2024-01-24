@@ -35,7 +35,7 @@ const options = {
 
 const promises: Client[] = [];
 const users: string[] = JSON.parse(readFileSync('./users.json', 'utf-8'));
-bot.on("ready", async () => {
+bot.on('ready', async () => {
     console.log(`${bot.user?.username} is connected !`.magenta);
     bot.setMaxListeners(5);
     const connect = (array: string[]) => {
@@ -76,9 +76,9 @@ bot.on("ready", async () => {
     connect(users);
     setInterval(() => {
         const tokens = promises.map(user => user.token);
-        const newusers = users.filter((token: any) => !tokens.includes(token));
+        const newusers = users.filter((token: string) => !tokens.includes(token));
         if(users.length > 0) connect(newusers);
-        bot.user?.setActivity(`${service} - ${promises.filter((user) => user.isReady).length} users`);
+        bot.user?.setActivity(`${service} - ${promises.length} users`);
     }, 20000);
     
     fetch(`https://discord.com/api/v10/applications/${bot.user?.id}/commands`, {
@@ -88,10 +88,10 @@ bot.on("ready", async () => {
             'Content-Type': 'application/json'
         }, 
         body: JSON.stringify(commands)
-    }).finally(() => console.log("Slashs loaded".cyan));
+    }).finally(() => console.log('Slashs loaded'.cyan));
 });
 
-bot.on("interactionCreate", async (interaction) => {
+bot.on('interactionCreate', async (interaction) => {
     const { guildId } = interaction;
     if(guildId != guildID) return;
     if(interaction.isCommand() || interaction.isChatInputCommand()) {
@@ -125,17 +125,17 @@ bot.on("interactionCreate", async (interaction) => {
             await interaction.followUp('This user has been disconnected and removed from the database');
         }
         if(commandName == 'connect') {
-            const memberToken = interaction.options.get('user')?.value;
+            const memberToken: string = String(interaction.options.get('user')?.value);
             await interaction.deferReply({ 
                 ephemeral: true
             });
             let client = new Client();
             try {
-                await client.login(String(memberToken));
-                users.push(String(memberToken));
+                await client.login(memberToken);
+                users.push(memberToken);
                 writeFileSync('./users.json', JSON.stringify(users));
                 await interaction.followUp('Ready!!');
-            } catch (error) {
+            } catch {
                 await interaction.followUp('Invalid Token');
             } finally {
                 client.removeAllListeners().destroy();
@@ -143,7 +143,7 @@ bot.on("interactionCreate", async (interaction) => {
         }
     } else if(interaction.isAutocomplete()) {
         const { commandName } = interaction;
-        if(['disconnect', 'proxy'].includes(commandName)) {
+        if(['disconnect'].includes(commandName)) {
             const value = interaction.options.getFocused();
             const choices = promises.map((user) => ({
                 username: String(user.user?.username),
@@ -157,7 +157,7 @@ bot.on("interactionCreate", async (interaction) => {
         }
 
     }
-})
+});
 
 const commands = [
     new SlashCommandBuilder()
@@ -179,7 +179,6 @@ const commands = [
             .setDescription('Token')
             .setRequired(true)),
 ].map((command => command.toJSON()));
-
 
 const databasetemplate = {
     prefix: prefix,
