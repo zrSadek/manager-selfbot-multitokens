@@ -26,7 +26,7 @@ A simple selfbot manager written in typeScript
 
     cd manager-selfbot-multitokens
     npm i -g ts-node typescript 
-    npm i discord.js discord.js-selfbot-v13
+    npm i discord.js discord.js-selfbot-v13 fs colors @discordjs/voice 
 ## Start the project
 
      ts-node src/index
