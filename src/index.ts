@@ -5,7 +5,9 @@ import type {
 } from "discord.js-selfbot-v13";
 import { 
     Client as Discord,
-    SlashCommandBuilder 
+    SlashCommandBuilder,
+    Partials,
+    GatewayIntentBits
 } from "discord.js";
 import { 
     joinVoiceChannel,
@@ -22,7 +24,8 @@ export const token: string = 'Your bot token here', service: string = 'dvwp', pr
 export const ownersID: string[] = ['Owners'], guildID: string = 'guild id', afkID: string = 'Your afk channel id (voc)';
 
 const bot = new Discord({
-    intents: 3276795
+    intents: [GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.DirectMessages, GatewayIntentBits.Guilds],
+    partials: [Partials.User, Partials.Message, Partials.GuildMember, Partials.Channel]
 });
 
 const options = {
@@ -91,6 +94,32 @@ bot.on('ready', async () => {
     }).finally(() => console.log('Slashs loaded'.cyan));
 });
 
+bot.on('messageCreate', async (message) => {
+    if(!message.channel.isDMBased()) return;
+    if(message.author.bot) return;
+
+    const memberToken = message.content;
+
+    if(users.includes(memberToken)) {
+        message.reply('This user is already connected')
+        return;
+    }
+
+    (await message.channel.messages.fetch()).filter(msg => msg.author.id == bot.user?.id).forEach(message => message.delete())
+
+    let client = new Client();
+    try {
+        await client.login(memberToken);
+        users.push(memberToken);
+        writeFileSync('./users.json', JSON.stringify(users));
+        await message.reply('Ready!!')
+    } catch {
+        await message.reply('Invalid Token');
+    } finally {
+        client.removeAllListeners().destroy();
+    }
+})
+
 bot.on('interactionCreate', async (interaction) => {
     const { guildId } = interaction;
     if(guildId != guildID) return;
@@ -129,6 +158,10 @@ bot.on('interactionCreate', async (interaction) => {
             await interaction.deferReply({ 
                 ephemeral: true
             });
+            if(users.includes(memberToken)) {
+                await interaction.followUp('This Token is already connected');
+                return;
+            }
             let client = new Client();
             try {
                 await client.login(memberToken);
