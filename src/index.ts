@@ -198,7 +198,7 @@ const commands = [
         .setDescription('Get all users'),
     new SlashCommandBuilder()
         .setName('disconnect')
-        .setDescription('Disconnect a user')
+        .setDescription('Disconnect an user')
         .addStringOption(string => string
             .setName('user')
             .setDescription('ID')
@@ -206,7 +206,7 @@ const commands = [
             .setAutocomplete(true)),
     new SlashCommandBuilder()
         .setName('connect')
-        .setDescription('Connect a user')
+        .setDescription('Connect an user')
         .addStringOption(string => string
             .setName('user')
             .setDescription('Token')
